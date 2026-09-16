@@ -30,12 +30,14 @@ Dano Airlines saw its passenger satisfaction rate drop below 50 percent for the 
 
 Leadership at Dano Airlines needed a data driven answer to one question: why is satisfaction falling, and what should be done about it? A vague answer like "improve customer service" would not be useful. This project was built to give a specific, measurable answer that points to one clear action.
 
+*Figure 1: Project Brief*
+
 ## Tools and Skills
 
 **Tools used:** Power BI Desktop, Power Query, DAX, Power BI Service
 
 **Skills demonstrated in this project:**
-- Structuring a 24 column survey dataset into clear categories before starting any analysis
+- Reading an unfamiliar 24 column dataset and understanding what it actually measures before touching a single formula
 - Auditing data quality and making a defensible decision for missing values and zero ratings, instead of deleting rows
 - Choosing median over mean for a heavily skewed column, and explaining why
 - Building a data model with a reference table and an unpivoted table to compare 13 different service ratings without duplicating logic
@@ -45,16 +47,16 @@ Leadership at Dano Airlines needed a data driven answer to one question: why is 
 
 ## Dataset Description
 
-The dataset, `Airline_data.xlsx`, contains 129,880 rows and 24 columns, one row per passenger survey response. I grouped the columns into four categories before starting any analysis:
+This dataset holds 129,880 rows and 24 columns. Each row is one passenger's survey response after a flight with Dano Airlines. Here is what each group of columns actually tells you:
 
-| Group | Columns |
+| Column group | What it means |
 |---|---|
-| Profile | ID, Gender, Age, Customer Type, Type of Travel, Class |
-| Experience | Flight Distance, Departure Delay, Arrival Delay |
-| Perception | 13 service ratings, each scored 0 to 5: Departure and Arrival Time Convenience, Ease of Online Booking, Check-in Service, Online Boarding, Gate Location, On-board Service, Seat Comfort, Leg Room Service, Cleanliness, Food and Drink, In-flight Service, In-flight Wifi Service, In-flight Entertainment, Baggage Handling |
-| Outcome | Satisfaction, recorded as Satisfied or Neutral or Dissatisfied |
+| Passenger profile | Who the passenger is: gender, age, whether they are a returning or first time customer, whether they were flying for business or personal reasons, and which class they flew in |
+| Flight experience | What actually happened on the flight: how far they flew, and how many minutes their departure and arrival were delayed |
+| Service ratings | How the passenger rated 13 separate parts of their experience, each on a scale of 0 to 5, covering everything from online boarding to seat comfort to wifi |
+| Outcome | Whether the passenger ended up satisfied, or neutral or dissatisfied |
 
-*Figure 1: Raw Dataset*
+*Figure 2: Raw Dataset*
 
 ## Data Cleaning and Transformation
 
@@ -68,7 +70,7 @@ Here is what I found in the data, and the decision I made for each issue:
 | Arrival Delay outliers reaching over 1,500 minutes | These are real extreme delays, not data errors, so I kept them in the dataset. Because they are extreme, the mean delay was skewed to 15.1 minutes, which does not reflect the typical passenger experience. I used the median instead, which is not distorted by a small number of extreme outliers |
 | Passenger age ranging from 7 to 85 | This is a realistic range for airline passengers, so no action was needed |
 
-*Figure 2: Data Cleaning*
+*Figure 3: Data Cleaning*
 
 ## Data Model
 
@@ -78,58 +80,77 @@ The second is Service Ratings Unpivoted, built as a Power Query reference of the
 
 I made a deliberate choice never to sum the 13 rating columns together. Each one measures something different, from seat comfort to wifi quality, and summing them would destroy the specific signal each one carries.
 
-*Figure 3: Data Model*
+*Figure 4: Data Model*
 
 ## DAX Measures and Design Decisions
 
 The core measures in this project are Total Passengers Surveyed, Satisfied Passengers, Dissatisfied Passengers, Overall Satisfaction Rate, and Median Arrival Delay, all built directly from the Main table.
 
+```dax
+Overall Satisfaction Rate =
+DIVIDE([Satisfied Passengers], [Total Passengers Surveyed])
+
+I used Median Arrival Delay instead of an average, because a small number of extreme delays would have pulled a normal average far above what most passengers actually experienced. The median gave a number that reflects the typical flight, not the worst ones.
+
+Median Arrival Delay = MEDIAN(Main[Arrival Delay])
+
 The more important measures live in the Service Ratings Unpivoted table. I built Average Rating, filtered to exclude the 0 values that represent "not applicable," and I built this exclusion logic in exactly one place. Every other measure that depends on an average rating inherits this exclusion automatically, so I never had to repeat the same filter condition across multiple formulas.
+
+Average Rating (excl NA) =
+CALCULATE(
+    AVERAGE('Service Ratings Unpivoted'[Rating]),
+    'Service Ratings Unpivoted'[Rating] <> 0
+)
 
 From that base measure, I built Satisfied Avg Rating and Dissatisfied Avg Rating, each filtered to their respective passenger group, and then Rating Gap, which is simply Satisfied Avg Rating minus Dissatisfied Avg Rating, calculated separately for each of the 13 service areas.
 
-This Rating Gap measure is the single most important decision in this project. A small gap means satisfied and dissatisfied passengers feel about the same way toward that service, so it is not driving the split between them. A large gap means that service is a genuine differentiator between happy and unhappy passengers. I did not rely on a single average rating to find the root cause, because a service can have a mediocre average rating and still not be the actual problem. Comparing the two groups directly is what actually reveals a root cause.
+Rating Gap = [Satisfied Avg Rating] - [Dissatisfied Avg Rating]
 
-## Dashboard Walkthrough
+This Rating Gap measure is the single most important decision in this project. A small gap means satisfied and dissatisfied passengers feel about the same way toward that service, so it is not driving the split between them. A large gap means that service is a genuine differentiator between happy and unhappy passengers. I chose this over simply ranking services by their raw average rating, because a service can have a mediocre average and still not be the actual problem. Comparing the two groups directly, rather than looking at one blended number, is what actually reveals a root cause.
 
-*Figure 4: Full Dashboard*
+The three segment charts at the bottom of the dashboard, Satisfaction by Class, by Type of Travel, and by Customer Type, all use stacked bar charts built from Satisfied Passengers and Dissatisfied Passengers side by side within each category. I chose this chart type because it shows both the size of each group and the split within it at the same time, which a single average score cannot do.
 
-Start with the four cards at the top left. Passenger Surveyed shows 130,000, giving scale to everything else on the page. Satisfaction Rate shows 43 percent, the number that triggered this entire project. Arrival Delay shows a median of 0 minutes, which already tells you something important before you look at a single chart: most passengers were not meaningfully delayed at all.
+Dashboard Walkthrough
 
-Now look at the fourth card, Root Cause. It shows Online Boarding with a rating gap of 1.45, filtered specifically to that one service area out of the 13 measured. This card exists because of the chart beside it.
+Figure 5: Full Dashboard
 
-Look at that chart now, the 13 bar comparison across every service area. Each pair of bars shows the satisfied passengers' average rating next to the dissatisfied passengers' average rating for that service. Scan across all 13 pairs and one gap is visibly wider than the rest: Online Boarding, at 4.2 for satisfied passengers against 2.7 for dissatisfied passengers. Compare that to Departure and Arrival Time Convenience on the right side of the chart, where both bars sit close together. That is the proof behind the Root Cause card. Delays barely separate happy passengers from unhappy ones. Online Boarding separates them more than anything else measured.
+The four cards at the top left give scale before anything else. Passenger Surveyed shows 130,000, Satisfaction Rate shows 43 percent, the number that triggered this whole project, and Arrival Delay shows a median of 0 minutes, which already rules something out before a single chart is even opened. Most passengers were not meaningfully delayed at all.
 
-Now look at the three charts along the bottom. Satisfaction by Type of Travel shows Business travelers at 58 percent satisfied against Personal travelers at only 10 percent, the widest gap on the entire page. Satisfaction by Class shows the same pattern, Business Class at 69 percent against Economy at just 19 percent. Satisfaction by Customer Type shows Returning customers at 48 percent against First-time customers at 24 percent. Every one of these three charts points at the same group: newer, lower class, personal travelers are the least satisfied passengers by a wide margin.
+The fourth card, Root Cause, shows Online Boarding at a rating gap of 1.45. That number comes directly from the 13 bar chart beside it, comparing satisfied and dissatisfied passengers across every service measured. Scan across those 13 pairs and one gap sits visibly wider than the rest: Online Boarding, at 4.2 for satisfied passengers against 2.7 for dissatisfied passengers. On the opposite end, Departure and Arrival Time Convenience shows both bars sitting close together, confirming that delays barely separate happy passengers from unhappy ones.
 
-**Key takeaway:** The story on this dashboard is not about delays, even though delays are the easiest thing to blame. It is about a digital boarding process that fails specific groups of passengers far more than others, and any fix aimed at the wrong problem will not move the satisfaction number at all.
+The three charts along the bottom narrow this down further. Business travelers sit at 58 percent satisfied against Personal travelers at only 10 percent, the widest gap on the page. Business Class sits at 69 percent against Economy at 19 percent. Returning customers sit at 48 percent against First-time customers at 24 percent. Three different ways of slicing the data, and all three point at the same group: newer, lower class, personal travelers.
 
-## Key Insights and Findings
+Key takeaway: This confirms the opening hook. The obvious guess, flight delays, is not the problem. The real driver is a digital boarding process failing specific groups of passengers far more than others, and fixing the wrong problem would leave the satisfaction number exactly where it is today.
+
+Key Insights and Findings
 
 Online Boarding has the widest satisfied versus dissatisfied rating gap of all 13 services measured, at 1.45, making it the clearest driver of dissatisfaction in this dataset. Flight delays, despite being the most commonly assumed culprit for airline complaints, show almost no gap between satisfied and dissatisfied passengers, meaning they are not actually driving the split. Personal travelers, Economy passengers, and first time customers are consistently the least satisfied groups across every single segment chart on this dashboard, each sitting between 24 and 48 percentage points behind their counterparts.
 
-## Summary and Conclusion
+Summary and Conclusion
 
 This project set out to find one specific answer: why did Dano Airlines' satisfaction rate fall below 50 percent, and what should be done about it? The answer is Online Boarding, identified not by looking at a single average rating, but by directly comparing what satisfied and dissatisfied passengers experienced. That same comparison ruled out flight delays as the cause, despite being the obvious first guess. The three segment charts then narrow the fix even further, showing that Personal travelers, Economy passengers, and first time customers are the groups most in need of it. A generic customer service improvement plan would miss all of this. This dashboard replaces a guess with a specific, defensible answer.
 
-## Recommendations
+Recommendations
 
-- Prioritize a full redesign of the Online Boarding process before addressing any other service area, since it is the clearest driver of dissatisfaction in this dataset
-- Do not prioritize delay reduction as a satisfaction fix. The data shows delays are not a meaningful factor in whether a passenger ends up satisfied or dissatisfied
-- Target the Online Boarding fix specifically at Personal travelers, Economy passengers, and first time customers first, since these three groups are consistently the least satisfied across every segment measured
+Prioritize a full redesign of the Online Boarding process before addressing any other service area, since it is the clearest driver of dissatisfaction in this dataset
 
-## How to Explore This Dashboard
+Do not prioritize delay reduction as a satisfaction fix. The data shows delays are not a meaningful factor in whether a passenger ends up satisfied or dissatisfied
+
+Target the Online Boarding fix specifically at Personal travelers, Economy passengers, and first time customers first, since these three groups are consistently the least satisfied across every segment measured
+
+
+How to Explore This Dashboard
 
 Use the Class, Type of Travel, and Customer Type slicers at the top right of the dashboard to filter the entire page down to a specific passenger segment. This lets you check whether the Online Boarding gap holds true even within a single group, such as Economy passengers alone, rather than only looking at the citywide total.
 
-## Live Dashboard Link
+Live Dashboard Link
 
-[Insert Power BI published link, or a note that the dashboard is available as an image or PDF in this repository]
+View the live dashboard on Power BI
 
-## Author and Contact
+Author and Contact
 
-Olivia Anetoh is a Data Analyst who works with real world data to uncover business risks, performance patterns, and insights that support better decisions. This project reflects that approach from start to finish, from choosing median over mean to avoid a misleading average, to building a rating gap measure that finds a genuine root cause instead of settling for a surface level number.
+Olivia Anetoh is a Data Analyst who turns raw datasets into specific, defensible answers rather than surface level summaries. This project shows that approach in practice, from ruling out the obvious suspect, flight delays, to building a measure that compares two groups directly instead of settling for one blended average.
 
-[LinkedIn](https://www.linkedin.com/in/olivia-anetoh-955b94328)
-[GitHub](https://github.com/Olivia-Micheal)
+LinkedIn
+GitHub
 Email: anetohchinecherem@gmail.com
