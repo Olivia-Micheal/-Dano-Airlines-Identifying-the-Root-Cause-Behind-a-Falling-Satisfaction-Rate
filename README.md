@@ -30,6 +30,8 @@ Dano Airlines saw its passenger satisfaction rate drop below 50 percent for the 
 
 Leadership at Dano Airlines needed a data driven answer to one question: why is satisfaction falling, and what should be done about it? A vague answer like "improve customer service" would not be useful. This project was built to give a specific, measurable answer that points to one clear action.
 
+<img width="751" height="1280" alt="dano brief" src="https://github.com/user-attachments/assets/3fd2a047-4256-4626-a4b8-448c2bfd1a19" />
+
 *Figure 1: Project Brief*
 
 ## Tools and Skills
@@ -56,6 +58,9 @@ This dataset holds 129,880 rows and 24 columns. Each row is one passenger's surv
 | Service ratings | How the passenger rated 13 separate parts of their experience, each on a scale of 0 to 5, covering everything from online boarding to seat comfort to wifi |
 | Outcome | Whether the passenger ended up satisfied, or neutral or dissatisfied |
 
+
+<img width="1912" height="807" alt="dano airline raw dataset" src="https://github.com/user-attachments/assets/a7b5dbd6-b5f3-4e03-9df8-0859f3171ef8" />
+
 *Figure 2: Raw Dataset*
 
 ## Data Cleaning and Transformation
@@ -70,6 +75,8 @@ Here is what I found in the data, and the decision I made for each issue:
 | Arrival Delay outliers reaching over 1,500 minutes | These are real extreme delays, not data errors, so I kept them in the dataset. Because they are extreme, the mean delay was skewed to 15.1 minutes, which does not reflect the typical passenger experience. I used the median instead, which is not distorted by a small number of extreme outliers |
 | Passenger age ranging from 7 to 85 | This is a realistic range for airline passengers, so no action was needed |
 
+<img width="1902" height="838" alt="power query dano airline" src="https://github.com/user-attachments/assets/d8f2b9c7-6d46-4667-ae42-6545ee252847" />
+
 *Figure 3: Data Cleaning*
 
 ## Data Model
@@ -79,6 +86,8 @@ I built two tables. The first is the Main table, left untouched, with one row pe
 The second is Service Ratings Unpivoted, built as a Power Query reference of the Main table, not a duplicate. I kept the ID, Class, Type of Travel, Customer Type, and Satisfaction columns, then unpivoted the 13 individual rating columns into two columns: Service Area and Rating. I connected the two tables through a one to many relationship on passenger ID, filtering in a single direction.
 
 I made a deliberate choice never to sum the 13 rating columns together. Each one measures something different, from seat comfort to wifi quality, and summing them would destroy the specific signal each one carries.
+
+<img width="1782" height="1013" alt="Screenshot 2026-09-16 090752" src="https://github.com/user-attachments/assets/4d24b129-1d89-4a27-beeb-b626339edc67" />
 
 *Figure 4: Data Model*
 
@@ -119,6 +128,8 @@ The three segment charts at the bottom of the dashboard, Satisfaction by Class, 
 
 ## Dashboard Walkthrough
 
+<img width="1563" height="737" alt="Screenshot 2026-09-16 090559" src="https://github.com/user-attachments/assets/3f9cf35b-1b0b-42d6-9a11-73372e872d6d" />
+
 *Figure 5: Full Dashboard*
 
 The four cards at the top left give scale before anything else. Passenger Surveyed shows 130,000, Satisfaction Rate shows 43 percent, the number that triggered this whole project, and Arrival Delay shows a median of 0 minutes, which already rules something out before a single chart is even opened. Most passengers were not meaningfully delayed at all.
@@ -156,5 +167,5 @@ Use the Class, Type of Travel, and Customer Type slicers at the top right of the
 Olivia Anetoh is a Data Analyst who turns raw datasets into specific, defensible answers rather than surface level summaries. This project shows that approach in practice, from ruling out the obvious suspect, flight delays, to building a measure that compares two groups directly instead of settling for one blended average.
 
 [LinkedIn](https://www.linkedin.com/in/olivia-anetoh-955b94328)
-[GitHub](https://github.com/Olivia-Micheal)
+[GitHub](https://github.com/Olivia-Micheal) 
 Email: anetohchinecherem@gmail.com
